@@ -6,7 +6,6 @@ const ChatContext = createContext();
 
 export const ChatProvider = ({ children }) => {
   const [messages, setMessages] = useState([]);
-  const [message, setMessage] = useState();
   const [loading, setLoading] = useState(false);
   const [cameraZoomed, setCameraZoomed] = useState(true);
 
@@ -17,7 +16,6 @@ export const ChatProvider = ({ children }) => {
   const chat = async (userMessage) => {
     setQuestion("");
     setAnswer("");
-
     setLoading(true);
 
     try {
@@ -35,14 +33,17 @@ export const ChatProvider = ({ children }) => {
       const resp = await data.json();
 
       // Save AI answer
-      setAnswer(resp.answer);
+      setAnswer(resp.answer || "");
 
-      // Save messages
-      setMessages((messages) => [...messages, ...resp.messages]);
+      // Save messages safely
+      setMessages((messages) => [
+        ...messages,
+        ...(Array.isArray(resp.messages) ? resp.messages : []),
+      ]);
     } catch (err) {
       console.error("Chat error:", err);
     } finally {
-      setLoading(false); // ✅ ensures Send button is re-enabled
+      setLoading(false); // ensures Send button is re-enabled
     }
   };
 
@@ -50,13 +51,8 @@ export const ChatProvider = ({ children }) => {
     setMessages((messages) => messages.slice(1));
   };
 
-  useEffect(() => {
-    if (messages.length > 0) {
-      setMessage(messages[0]);
-    } else {
-      setMessage(null);
-    }
-  }, [messages]);
+  // Optional optimization: derive message instead of separate state
+  const message = messages[0] || null;
 
   return (
     <ChatContext.Provider
@@ -67,10 +63,9 @@ export const ChatProvider = ({ children }) => {
         loading,
         cameraZoomed,
         setCameraZoomed,
-
-        // MUST RETURN question and answer
         question,
         answer,
+        messages, // optional: expose full messages array if needed
       }}
     >
       {children}

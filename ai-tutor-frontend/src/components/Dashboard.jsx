@@ -1,51 +1,125 @@
-// src/components/Dashboard.jsx
-export const Dashboard = ({ onStart }) => {
-  return (
-    <div className="fixed inset-0 flex items-center justify-center bg-white/10 backdrop-blur-xl">
-      <div className="text-center p-8 rounded-3xl bg-white/30 border border-white/40 shadow-2xl max-w-md">
-        <h2 className="text-3xl font-bold mb-3 text-gray-900">Dashboard</h2>
-        <p className="text-gray-700 mb-6">
-          Track your learning streaks and progress here.
-        </p>
+import { useEffect, useState } from "react";
+import { useAuth } from "./AuthProvider";
+import { db } from "../firebaseConfig";
+import { doc, getDoc } from "firebase/firestore";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  ResponsiveContainer,
+} from "recharts";
 
-        {/* Placeholder for streak / analytics future */}
-        <div className="bg-white/40 p-4 rounded-xl mb-6 border border-white/50">
-          🔥 <span className="font-bold">Streak: 0 days</span>
-          <p className="text-xs text-gray-700">
-            Keep practicing daily to build your streak!
-          </p>
+export const Dashboard = ({ onStart }) => {
+  const { user, logout } = useAuth();
+  const [streak, setStreak] = useState(0);
+  const [timeData, setTimeData] = useState([]); // Array of { date: 'DD/MM', hours: X }
+
+  useEffect(() => {
+    if (!user) return;
+
+    const fetchData = async () => {
+      const userRef = doc(db, "users", user.uid);
+      const snap = await getDoc(userRef);
+      const data = snap.data() || {};
+      setStreak(data.streak || 0);
+
+      // Prepare graph data: last 7 days
+      const logs = data.sessionLogs || [];
+
+      // ✅ Sort logs by date ascending
+      const sortedLogs = [...logs].sort(
+        (a, b) => new Date(a.date) - new Date(b.date)
+      );
+
+      const last7Days = sortedLogs.slice(-7);
+
+      let graphData;
+
+      if (last7Days.length === 0) {
+        // Show empty chart if no data
+        graphData = Array.from({ length: 7 }).map((_, i) => ({
+          date: `Day ${i + 1}`,
+          hours: 0,
+        }));
+      } else {
+        graphData = last7Days.map((s) => ({
+          date: new Date(s.date).toLocaleDateString("en-GB", {
+            day: "2-digit",
+            month: "short",
+          }),
+          // ✅ Ensure s.timeSpent is in seconds before dividing by 3600
+          hours: +(s.timeSpent / 3600).toFixed(2),
+        }));
+      }
+
+      setTimeData(graphData);
+    };
+
+    fetchData();
+  }, [user]);
+
+  return (
+    <div className="fixed inset-0 flex items-center justify-center bg-white/10 backdrop-blur-xl p-6">
+      <div className="relative w-full max-w-3xl bg-white/20 backdrop-blur-xl rounded-xl border border-white/40 shadow-2xl p-4 flex flex-col gap-6">
+        {/* Top Bar */}
+        <div className="flex justify-between items-center">
+          <h2 className="text-2xl font-bold text-gray-900">Dashboard</h2>
+          <button
+            onClick={logout}
+            className="px-4 py-1.5 rounded-xl bg-red-500 text-white font-semibold shadow-md hover:bg-red-600 transition"
+          >
+            Logout
+          </button>
         </div>
 
+        <p className="text-gray-700 text-sm">
+          Track your learning streaks and time spent practicing English.
+        </p>
+
+        {/* Streak Card */}
+        <div className="flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-r from-yellow-400 via-yellow-300 to-yellow-200 shadow-lg border border-yellow-100">
+          <div className="text-3xl">🔥</div>
+          <div>
+            <p className="text-xl font-bold">
+              {streak} day{streak > 1 ? "s" : ""}
+            </p>
+            <p className="text-xs text-gray-800">
+              Keep practicing to maintain your streak!
+            </p>
+          </div>
+        </div>
+
+        {/* Time Spent Graph */}
+        <div className="bg-white/30 p-4 rounded-2xl shadow-md border border-white/40">
+          <h3 className="text-base font-semibold text-gray-900 mb-2">
+            Time Spent (Hours)
+          </h3>
+
+          <ResponsiveContainer width="100%" height={170}>
+            <LineChart data={timeData}>
+              <CartesianGrid stroke="#ccc" strokeDasharray="5 5" />
+              <XAxis dataKey="date" />
+              <YAxis />
+              <Tooltip />
+              <Line
+                type="monotone"
+                dataKey="hours"
+                stroke="#8884d8"
+                strokeWidth={2}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Start Button */}
         <button
           onClick={onStart}
-          className="
-    px-7 py-3.5 rounded-2xl font-semibold
-    bg-gradient-to-br from-white/90 via-white/80 to-white/60
-    text-gray-800 tracking-tight
-    border border-white/70 shadow-[0_8px_24px_rgba(0,0,0,0.07)]
-    backdrop-blur-xl 
-    transition-all duration-300 ease-[cubic-bezier(.4,0,.2,1)]
-    
-    hover:shadow-[0_12px_28px_rgba(0,0,0,0.10)]
-    hover:-translate-y-0.5 hover:from-white hover:to-white/85
-    hover:border-white/90
-
-    active:scale-[0.985] active:shadow-[0_5px_14px_rgba(0,0,0,0.12)]
-    relative overflow-hidden
-  "
+          className="mx-auto px-8 py-2 rounded-2xl font-semibold bg-gradient-to-br from-white/90 via-white/80 to-white/60 text-gray-800 border border-white/70 shadow-lg hover:shadow-xl transition-all"
         >
-          <span className="relative z-10">Start Speaking Practice</span>
-
-          {/* soft highlight sweep */}
-          <span
-            className="
-      absolute inset-0 opacity-0
-      bg-gradient-to-r from-transparent via-white/40 to-transparent
-      transition-all duration-500
-      hover:opacity-100 hover:translate-x-full
-    "
-            style={{ transform: "translateX(-100%)" }}
-          ></span>
+          Start Speaking Practice
         </button>
       </div>
     </div>

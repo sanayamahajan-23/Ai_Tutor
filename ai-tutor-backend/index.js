@@ -5,9 +5,15 @@ import voice from "elevenlabs-node";
 import express from "express";
 import { promises as fs } from "fs";
 import path from "path";
-
+import admin from "firebase-admin";
 dotenv.config();
+const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
 
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+});
+
+const db = admin.firestore();
 const elevenLabsApiKey = process.env.ELEVEN_LABS_API_KEY;
 const voiceID = "XrExE9yKIg1WjnnlVkGX";
 
@@ -101,7 +107,11 @@ app.get("/", (_, res) => res.send("English AI Tutor Backend ✅"));
 
 app.post("/chat", async (req, res) => {
   const userMessage = req.body.message;
-
+  const userId = req.body.userId; 
+   if (userId) {
+     chatHistory = await getUserChatHistory(userId);
+     console.log("📜 User chat history:\n", chatHistory);
+   }
   // ---- NO USER TEXT → send intro ----
   if (!userMessage) {
     console.log("👋 Sending intro message...");
@@ -140,6 +150,26 @@ app.post("/chat", async (req, res) => {
 
   // ---- AI Chat (Ollama) ----
   console.log("🤖 Using local Ollama...");
+   let chatHistory = [];
+   if (userId) {
+     chatHistory = await getUserChatHistory(userId); // should return an array of { userMessage, aiResponse }
+     console.log("📜 User chat history:", chatHistory);
+   }
+
+   // ---- Determine if we should include history ----
+   let historyText = "(no prior messages)"; // default
+   if (chatHistory.length > 0) {
+     const lastMessage = chatHistory[chatHistory.length - 1].userMessage || "";
+     if (areMessagesRelated(lastMessage, userMessage)) {
+       historyText = chatHistory
+         .map(
+           (m) =>
+             `User: ${m.userMessage}\nAI: ${m.aiResponse || "(no response)"}`
+         )
+         .join("\n");
+     }
+   }
+
 
   const prompt = `
 You are Vaani, an AI language model that ALWAYS analyzes and corrects the user's English.
@@ -207,6 +237,9 @@ Animation logic:
 If unsure, default to:
 "facialExpression": "default",
 "animation": "Talking_1"
+Here is the previous conversation context:
+${historyText}
+
 Now respond to the user:
 User: ${userMessage}
 `;
@@ -365,3 +398,17 @@ User: ${userMessage}
 app.listen(port, () =>
   console.log(`✅ English AI Tutor running on port ${port}`)
 );
+// ---- Utility function to detect relatedness ----
+function areMessagesRelated(prev, curr) {
+  if (!prev || !curr) return false;
+  prev = prev.toLowerCase();
+  curr = curr.toLowerCase();
+
+  const prevWords = new Set(prev.split(/\W+/));
+  const currWords = new Set(curr.split(/\W+/));
+
+  let common = 0;
+  for (let w of currWords) if (prevWords.has(w)) common++;
+
+  return common > 0; // related if at least 1 word matches
+}
