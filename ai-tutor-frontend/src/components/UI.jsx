@@ -75,7 +75,7 @@ export const UI = ({ hidden, onGoDashboard }) => {
         </header>
 
         {/* Left Floating Tools */}
-        <div className="absolute left-6 top-1/2 -translate-y-1/2 flex flex-col gap-3 pointer-events-auto">
+        <div className="absolute right-6 top-1/2 -translate-y-1/2 flex flex-col gap-3 pointer-events-auto">
           {/* Camera Zoom */}
           <button
             onClick={() => setCameraZoomed(!cameraZoomed)}

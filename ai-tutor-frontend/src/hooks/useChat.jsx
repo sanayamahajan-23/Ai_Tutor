@@ -15,34 +15,36 @@ export const ChatProvider = ({ children }) => {
   const [answer, setAnswer] = useState("");
 
   const chat = async (userMessage) => {
-  setLoading(true);
+    setQuestion("");
+    setAnswer("");
 
-  try {
-    // Save the user's question
-    setQuestion(userMessage);
+    setLoading(true);
 
-    const data = await fetch(`${backendUrl}/chat`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ message: userMessage }),
-    });
+    try {
+      // Save the user's question
+      setQuestion(userMessage);
 
-    const resp = await data.json();
+      const data = await fetch(`${backendUrl}/chat`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ message: userMessage }),
+      });
 
-    // Save AI answer
-    setAnswer(resp.answer);
+      const resp = await data.json();
 
-    // Save messages
-    setMessages((messages) => [...messages, ...resp.messages]);
-  } catch (err) {
-    console.error("Chat error:", err);
-  } finally {
-    setLoading(false); // ✅ ensures Send button is re-enabled
-  }
-};
+      // Save AI answer
+      setAnswer(resp.answer);
 
+      // Save messages
+      setMessages((messages) => [...messages, ...resp.messages]);
+    } catch (err) {
+      console.error("Chat error:", err);
+    } finally {
+      setLoading(false); // ✅ ensures Send button is re-enabled
+    }
+  };
 
   const onMessagePlayed = () => {
     setMessages((messages) => messages.slice(1));

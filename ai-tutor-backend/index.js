@@ -249,35 +249,47 @@ User: ${userMessage}
   }
 
   // ---- Parse and normalize ----
+  // ---- Parse and normalize safely ----
   let messages;
   let jsonString = responses.trim();
-  const jsonMatch = jsonString.match(/(\[[\s\S]*?])/);
+
+  // Utility: sanitize and escape inner quotes in "text" values
+  function sanitizeTextFields(str) {
+    return str.replace(/"text"\s*:\s*"([^"]*?)"/g, (match, inner) => {
+      let fixed = inner
+        .replace(/\\/g, "\\\\") // escape all backslashes
+        .replace(/"/g, '\\"') // escape double quotes
+        .replace(/[“”]/g, '"') // convert smart quotes
+        .replace(/[‘’]/g, "'"); // convert smart single quotes
+      return `"text": "${fixed}"`;
+    });
+  }
+
+  // Extract JSON array from raw model text
+  const jsonMatch = jsonString.match(/\[[\s\S]*?\]/);
   if (jsonMatch) jsonString = jsonMatch[0];
-  console.log("📦 JSON extracted:", jsonString);
+
+  // Cleaning steps
+  jsonString = jsonString
+    .replace(/^[^\[{]+/, "") // remove leading trash
+    .replace(/[^\]}]+$/, "") // remove trailing trash
+    .replace(/,(\s*[}\]])/g, "$1") // remove trailing commas
+    .replace(/'/g, '"') // normalize single quotes
+    .replace(/(\w+)\s*:/g, '"$1":'); // quote unquoted keys
+
+  // Sanitize all text fields
+  jsonString = sanitizeTextFields(jsonString);
 
   try {
-    // --- Clean up messy model text ---
-    jsonString = jsonString
-      // remove lines starting with non-JSON keys (like ferrari_courses:)
-      .replace(/^[^{\[]*ferrari_courses.*$/gm, "")
-      // remove any trailing commas before closing braces/brackets
-      .replace(/,(\s*[}\]])/g, "$1")
-      // replace single quotes with double quotes if any
-      .replace(/'/g, '"')
-      // remove unquoted keys accidentally generated
-      .replace(/(\w+):/g, '"$1":')
-      // remove any stray text before/after valid JSON
-      .replace(/^[^{\[]+/, "")
-      .replace(/[^}\]]+$/, "");
-
     messages = JSON.parse(jsonString);
     console.log("✅ Parsed JSON messages:", messages);
   } catch (err) {
     console.error("❌ JSON parse failed:", err.message);
-    console.log("🧹 Attempting fallback parse repair...");
+    console.log("🧹 Attempting advanced fallback repair...");
 
-    // Try to extract all "text": "..." lines
-    const fallbackMatches = [...responses.matchAll(/"text"\s*:\s*"([^"]+)"/g)];
+    // Fallback: extract all "text" fields robustly
+    const fallbackMatches = [...responses.matchAll(/"text"\s*:\s*"([^"]*?)"/g)];
+
     if (fallbackMatches.length) {
       messages = fallbackMatches.map((m) => ({
         text: m[1],
@@ -285,9 +297,10 @@ User: ${userMessage}
         animation: "Talking_1",
       }));
     } else {
+      // Ultimate fallback: safe default message
       messages = [
         {
-          text: "Sorry, could you rephrase that?",
+          text: "Sorry, your message triggered an invalid JSON structure. Please rephrase.",
           facialExpression: "default",
           animation: "Talking_1",
         },
@@ -295,17 +308,22 @@ User: ${userMessage}
     }
   }
 
+  // Ensure we always have an array
   if (!Array.isArray(messages)) messages = [messages];
 
+  // Validate expressions and animations
   const validExpressions = ["smile", "surprised", "default"];
   const validAnimations = ["Talking_0", "Talking_1", "Talking_2", "Idle"];
 
-  // Clean and validate each message
   messages = messages.map((m) => {
+    // Flatten nested objects
     if (m.text && typeof m.text === "object") m = { ...m, ...m.text };
-    if (!m.text && m.textinb) m.text = m.textinb;
-    if (typeof m.text !== "string") m.text = "Sorry, could you rephrase that?";
 
+    // Fallback for invalid text
+    if (!m.text || typeof m.text !== "string")
+      m.text = "Sorry, could you rephrase that?";
+
+    // Validate facial expression and animation
     if (!validExpressions.includes(m.facialExpression))
       m.facialExpression = "default";
     if (!validAnimations.includes(m.animation)) m.animation = "Talking_1";
@@ -336,10 +354,11 @@ User: ${userMessage}
     messages[i].lipsync = await readJsonTranscript(json);
   }
 
-  res.send({ 
+  res.send({
     question: userMessage,
     answer: frontendText,
-    messages });
+    messages,
+  });
 });
 
 // ------------ START SERVER ------------
