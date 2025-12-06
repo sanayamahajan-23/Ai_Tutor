@@ -4,7 +4,7 @@ import { useChat } from "../hooks/useChat";
 export const UI = ({ hidden, onGoDashboard }) => {
   const input = useRef();
   const { chat, loading, cameraZoomed, setCameraZoomed, message, question,
-  answer } = useChat();
+  answer, } = useChat();
   const SpeechRecognition =
     window.SpeechRecognition || window.webkitSpeechRecognition;
 
@@ -106,25 +106,25 @@ export const UI = ({ hidden, onGoDashboard }) => {
             )}
           </button>
         </div>
-        </div>
         {/* Q/A Display Section */}
-        <div className="absolute bottom-40 left-8 flex flex-col gap-4 z-20">
-        
-          {/* User Question */}
-          {question && (
-            <div className="max-w-xs p-4 bg-indigo-100 text-gray-900 rounded-xl shadow-md self-start">
-              <strong>You:</strong> {question}
-            </div>
-          )}
-        
-          {/* AI Answer */}
-          {answer && (
-            <div className="max-w-xs p-4 bg-green-100 text-gray-900 rounded-xl shadow-md self-end">
-              <strong>AI:</strong> {answer}
-            </div>
-          )}
-        
-        
+<div className="absolute bottom-40 left-8 flex flex-col gap-4 z-20">
+
+  {/* User Question */}
+  {question && (
+    <div className="max-w-xs p-4 bg-indigo-100 text-gray-900 rounded-xl shadow-md self-start">
+      <strong>You:</strong> {question}
+    </div>
+  )}
+
+  {/* AI Answer */}
+  {answer && (
+    <div className="max-w-xs p-4 bg-green-100 text-gray-900 rounded-xl shadow-md self-end">
+      <strong>AI:</strong> {answer}
+    </div>
+  )}
+
+</div>
+
 
         {/* Bottom Chat Bar */}
         <div className="pointer-events-auto flex flex-col items-start mb-8 gap-4 pl-8">
@@ -164,23 +164,23 @@ export const UI = ({ hidden, onGoDashboard }) => {
               "
               title="Speak"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
+               <svg 
+                xmlns='http://www.w3.org/2000/svg' 
+                width='24' 
+                height='24' 
+                viewBox='0 0 24 24' 
+                fill='none' 
+                stroke='currentColor' 
+                strokeWidth='2' 
+                strokeLinecap='round' 
+                strokeLinejoin='round'
                 className="text-gray-900"
               >
-                <path d="M12 1a3 3 0 0 1 3 3v6a3 3 0 0 1-6 0V4a3 3 0 0 1 3-3z"></path>
-                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-                <line x1="12" y1="19" x2="12" y2="23"></line>
-                <line x1="8" y1="23" x2="16" y2="23"></line>
-              </svg>
+                <path d='M12 1a3 3 0 0 1 3 3v6a3 3 0 0 1-6 0V4a3 3 0 0 1 3-3z'></path>
+                <path d='M19 10v2a7 7 0 0 1-14 0v-2'></path>
+                <line x1='12' y1='19' x2='12' y2='23'></line>
+                <line x1='8' y1='23' x2='16' y2='23'></line>
+              </svg            >
             </button>
 
             <button
