@@ -212,6 +212,7 @@ User: ${userMessage}
 `;
 
   let responses = "";
+  let frontendText = "";
 
   try {
     const response = await fetch("http://localhost:11434/api/generate", {
@@ -319,6 +320,7 @@ User: ${userMessage}
 
     const wav = `audios/message_${i}.wav`;
     const json = `audios/message_${i}.json`;
+    frontendText = text;
 
     console.log(`🎤 TTS for reply #${i}:`, text);
     await voice.textToSpeech(elevenLabsApiKey, voiceID, wav, text);
@@ -334,7 +336,10 @@ User: ${userMessage}
     messages[i].lipsync = await readJsonTranscript(json);
   }
 
-  res.send({ messages });
+  res.send({ 
+    question: userMessage,
+    answer: frontendText,
+    messages });
 });
 
 // ------------ START SERVER ------------

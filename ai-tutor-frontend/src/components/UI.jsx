@@ -3,7 +3,8 @@ import { useChat } from "../hooks/useChat";
 
 export const UI = ({ hidden, onGoDashboard }) => {
   const input = useRef();
-  const { chat, loading, cameraZoomed, setCameraZoomed, message } = useChat();
+  const { chat, loading, cameraZoomed, setCameraZoomed, message, question,
+  answer } = useChat();
   const SpeechRecognition =
     window.SpeechRecognition || window.webkitSpeechRecognition;
 
@@ -105,6 +106,25 @@ export const UI = ({ hidden, onGoDashboard }) => {
             )}
           </button>
         </div>
+        </div>
+        {/* Q/A Display Section */}
+        <div className="absolute bottom-40 left-8 flex flex-col gap-4 z-20">
+        
+          {/* User Question */}
+          {question && (
+            <div className="max-w-xs p-4 bg-indigo-100 text-gray-900 rounded-xl shadow-md self-start">
+              <strong>You:</strong> {question}
+            </div>
+          )}
+        
+          {/* AI Answer */}
+          {answer && (
+            <div className="max-w-xs p-4 bg-green-100 text-gray-900 rounded-xl shadow-md self-end">
+              <strong>AI:</strong> {answer}
+            </div>
+          )}
+        
+        
 
         {/* Bottom Chat Bar */}
         <div className="pointer-events-auto flex flex-col items-start mb-8 gap-4 pl-8">
